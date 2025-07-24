@@ -4,74 +4,74 @@ import math
 
 app = Flask(__name__)
 
-# Comprehensive IBAN formats with correct BBAN structures
-IBAN_FORMATS = {
-    "AL": {"length": 28, "bban": lambda: "0" + generate_numeric(3) + generate_numeric(4) + generate_alphanum(16)},
-    "AD": {"length": 24, "bban": lambda: generate_numeric(4) + generate_numeric(4) + generate_alphanum(12)},
-    "AT": {"length": 20, "bban": lambda: generate_numeric(5) + generate_numeric(11)},
-    "AZ": {"length": 28, "bban": lambda: generate_alpha(4) + generate_alphanum(20)},
-    "BH": {"length": 22, "bban": lambda: generate_alpha(4) + generate_alphanum(14)},
-    "BE": {"length": 16, "bban": lambda: generate_numeric(3) + generate_numeric(7) + generate_numeric(2)},
-    "BA": {"length": 20, "bban": lambda: generate_numeric(3) + generate_numeric(3) + generate_numeric(8) + generate_numeric(2)},
-    "BR": {"length": 29, "bban": lambda: generate_numeric(8) + generate_numeric(5) + generate_numeric(10) + generate_alpha(1) + generate_alphanum(1)},
-    "BG": {"length": 22, "bban": lambda: generate_alpha(4) + generate_numeric(4) + generate_numeric(2) + generate_alphanum(8)},
-    "CR": {"length": 21, "bban": lambda: generate_numeric(4) + generate_numeric(14)},
-    "HR": {"length": 21, "bban": lambda: generate_numeric(7) + generate_numeric(10)},
-    "CY": {"length": 28, "bban": lambda: generate_numeric(3) + generate_numeric(5) + generate_alphanum(16)},
-    "CZ": {"length": 24, "bban": lambda: generate_numeric(4) + generate_numeric(6) + generate_numeric(10)},
-    "DK": {"length": 18, "bban": lambda: generate_numeric(4) + generate_numeric(9) + generate_numeric(1)},
-    "DO": {"length": 28, "bban": lambda: generate_alpha(4) + generate_numeric(20)},
-    "EE": {"length": 20, "bban": lambda: generate_numeric(2) + generate_numeric(2) + generate_numeric(11) + generate_numeric(1)},
-    "FI": {"length": 18, "bban": lambda: generate_numeric(3) + generate_numeric(4) + generate_numeric(2) + generate_numeric(3) + generate_numeric(1)},
-    "FR": {"length": 27, "bban": lambda: generate_numeric(5) + generate_numeric(5) + generate_alphanum(11) + generate_numeric(2)},
-    "GE": {"length": 22, "bban": lambda: generate_alpha(2) + generate_numeric(16)},
-    "DE": {"length": 22, "bban": lambda: generate_numeric(8) + generate_numeric(10)},
-    "GI": {"length": 23, "bban": lambda: generate_alpha(4) + generate_alphanum(15)},
-    "GR": {"length": 27, "bban": lambda: generate_numeric(3) + generate_numeric(4) + generate_alphanum(16)},
-    "GL": {"length": 18, "bban": lambda: generate_numeric(4) + generate_numeric(9) + generate_numeric(1)},
-    "HU": {"length": 28, "bban": lambda: generate_numeric(3) + generate_numeric(4) + generate_numeric(1) + generate_numeric(15) + generate_numeric(1)},
-    "IS": {"length": 26, "bban": lambda: generate_numeric(4) + generate_numeric(2) + generate_numeric(6) + generate_numeric(10)},
-    "IE": {"length": 22, "bban": lambda: generate_alpha(4) + generate_numeric(6) + generate_numeric(8)},
-    "IL": {"length": 23, "bban": lambda: generate_numeric(3) + generate_numeric(3) + generate_numeric(13)},
-    "IT": {"length": 27, "bban": lambda: generate_alpha(1) + generate_numeric(5) + generate_numeric(5) + generate_alphanum(12)},
-    "JO": {"length": 30, "bban": lambda: generate_alpha(4) + generate_numeric(4) + generate_alphanum(18)},
-    "KZ": {"length": 20, "bban": lambda: generate_numeric(3) + generate_alphanum(13)},
-    "XK": {"length": 20, "bban": lambda: generate_numeric(4) + generate_numeric(10) + generate_numeric(2)},
-    "KW": {"length": 30, "bban": lambda: generate_alpha(4) + generate_alphanum(22)},
-    "LV": {"length": 21, "bban": lambda: generate_alpha(4) + generate_alphanum(13)},
-    "LB": {"length": 28, "bban": lambda: generate_numeric(4) + generate_alphanum(20)},
-    "LI": {"length": 21, "bban": lambda: generate_numeric(5) + generate_alphanum(12)},
-    "LT": {"length": 20, "bban": lambda: generate_numeric(5) + generate_numeric(11)},
-    "LU": {"length": 20, "bban": lambda: generate_numeric(3) + generate_alphanum(13)},
-    "MK": {"length": 19, "bban": lambda: generate_numeric(3) + generate_alphanum(10) + generate_numeric(2)},
-    "MT": {"length": 31, "bban": lambda: generate_alpha(4) + generate_numeric(5) + generate_alphanum(18)},
-    "MR": {"length": 27, "bban": lambda: generate_numeric(5) + generate_numeric(5) + generate_numeric(11) + generate_numeric(2)},
-    "MU": {"length": 30, "bban": lambda: generate_alpha(4) + generate_numeric(2) + generate_numeric(2) + generate_numeric(12) + generate_numeric(3) + generate_alpha(3)},
-    "MD": {"length": 24, "bban": lambda: generate_alphanum(2) + generate_alphanum(18)},
-    "MC": {"length": 27, "bban": lambda: generate_numeric(5) + generate_numeric(5) + generate_alphanum(11) + generate_numeric(2)},
-    "ME": {"length": 22, "bban": lambda: generate_numeric(3) + generate_numeric(13) + generate_numeric(2)},
-    "NL": {"length": 18, "bban": lambda: generate_alpha(4) + generate_numeric(10)},
-    "NO": {"length": 15, "bban": lambda: generate_numeric(4) + generate_numeric(6) + generate_numeric(1)},
-    "PK": {"length": 24, "bban": lambda: generate_alpha(4) + generate_alphanum(16)},
-    "PS": {"length": 29, "bban": lambda: generate_alpha(4) + generate_alphanum(21)},
-    "PL": {"length": 28, "bban": lambda: generate_numeric(8) + generate_numeric(16)},
-    "PT": {"length": 25, "bban": lambda: generate_numeric(4) + generate_numeric(4) + generate_numeric(11) + generate_numeric(2)},
-    "QA": {"length": 29, "bban": lambda: generate_alpha(4) + generate_alphanum(21)},
-    "RO": {"length": 24, "bban": lambda: generate_alpha(4) + generate_alphanum(16)},
-    "SM": {"length": 27, "bban": lambda: generate_alpha(1) + generate_numeric(5) + generate_numeric(5) + generate_alphanum(12)},
-    "SA": {"length": 24, "bban": lambda: generate_numeric(2) + generate_alphanum(18)},
-    "RS": {"length": 22, "bban": lambda: generate_numeric(3) + generate_numeric(13) + generate_numeric(2)},
-    "SK": {"length": 24, "bban": lambda: generate_numeric(4) + generate_numeric(6) + generate_numeric(10)},
-    "SI": {"length": 19, "bban": lambda: generate_numeric(5) + generate_numeric(8) + generate_numeric(2)},
-    "ES": {"length": 24, "bban": lambda: generate_numeric(4) + generate_numeric(4) + generate_numeric(1) + generate_numeric(1) + generate_numeric(10)},
-    "SE": {"length": 24, "bban": lambda: generate_numeric(3) + generate_numeric(16) + generate_numeric(1)},
-    "CH": {"length": 21, "bban": lambda: generate_numeric(5) + generate_alphanum(12)},
-    "TN": {"length": 24, "bban": lambda: generate_numeric(2) + generate_numeric(3) + generate_numeric(13) + generate_numeric(2)},
-    "TR": {"length": 26, "bban": lambda: generate_numeric(5) + generate_alphanum(1) + generate_alphanum(16)},
-    "AE": {"length": 23, "bban": lambda: generate_numeric(3) + generate_numeric(16)},
-    "GB": {"length": 22, "bban": lambda: generate_alpha(4) + generate_numeric(6) + generate_numeric(8)},
-    "VA": {"length": 22, "bban": lambda: generate_numeric(3) + generate_numeric(15)},
-    "VG": {"length": 24, "bban": lambda: generate_alpha(4) + generate_numeric(16)}
+# Country-specific BBAN generators with realistic structures
+def generate_de():
+    # Germany: 8 digit bank code + 10 digit account number
+    bank_code = generate_numeric(8)
+    account_number = generate_numeric(10)
+    return bank_code + account_number
+
+def generate_gb():
+    # UK: 4 char bank code + 6 digit sort code + 8 digit account
+    bank_code = generate_alpha(4)
+    sort_code = generate_numeric(2) + "-" + generate_numeric(2) + "-" + generate_numeric(2)
+    account_number = generate_numeric(8)
+    return bank_code + sort_code.replace("-", "") + account_number
+
+def generate_fr():
+    # France: 5 digit bank code + 5 digit branch + 11 digit account + 2 digit key
+    bank_code = generate_numeric(5)
+    branch_code = generate_numeric(5)
+    account_number = generate_numeric(11)
+    key = generate_numeric(2)
+    return bank_code + branch_code + account_number + key
+
+def generate_nl():
+    # Netherlands: 4 char bank code + 10 digit account
+    bank_code = generate_alpha(4)
+    account_number = generate_numeric(10)
+    return bank_code + account_number
+
+def generate_es():
+    # Spain: 4 digit bank + 4 digit branch + 2 digit check + 10 digit account
+    bank_code = generate_numeric(4)
+    branch_code = generate_numeric(4)
+    check_digits = generate_numeric(2)
+    account_number = generate_numeric(10)
+    return bank_code + branch_code + check_digits + account_number
+
+def generate_it():
+    # Italy: 1 char check + 5 digit ABIs + 5 digit CAB + 12 char account
+    check_char = generate_alpha(1)
+    abi = generate_numeric(5)
+    cab = generate_numeric(5)
+    account = generate_alphanum(12)
+    return check_char + abi + cab + account
+
+def generate_ch():
+    # Switzerland: 5 digits + 12 alphanum
+    bank_code = generate_numeric(5)
+    account_number = generate_alphanum(12)
+    return bank_code + account_number
+
+def generate_be():
+    # Belgium: 3 digit bank + 7 digit account + 2 digit check
+    bank_code = generate_numeric(3)
+    account_number = generate_numeric(7)
+    check_digits = generate_numeric(2)
+    return bank_code + account_number + check_digits
+
+# Country-specific generators mapping
+COUNTRY_GENERATORS = {
+    "DE": {"length": 22, "generator": generate_de},
+    "GB": {"length": 22, "generator": generate_gb},
+    "FR": {"length": 27, "generator": generate_fr},
+    "NL": {"length": 18, "generator": generate_nl},
+    "ES": {"length": 24, "generator": generate_es},
+    "IT": {"length": 27, "generator": generate_it},
+    "CH": {"length": 21, "generator": generate_ch},
+    "BE": {"length": 16, "generator": generate_be},
+    # Add more countries as needed
 }
 
 def generate_numeric(length):
@@ -88,11 +88,9 @@ def letter_to_number(c):
     return str(ord(c.upper()) - 55) if c.isalpha() else c
 
 def calculate_check_digits(country, bban):
-    # Prepare the string for checksum calculation
     temp_iban = bban + country + "00"
-    # Convert letters to numbers
     numeric_str = ''.join(letter_to_number(c) for c in temp_iban)
-    # Compute MOD 97
+    
     mod = 0
     for i in range(0, len(numeric_str), 7):
         chunk = numeric_str[i:i+7]
@@ -103,35 +101,31 @@ def calculate_check_digits(country, bban):
 @app.route("/")
 def home():
     return jsonify({
-        "message": "Welcome to Fully Valid IBAN Generator API!",
+        "message": "Enhanced IBAN Generator with Realistic Bank Details",
         "usage": "/generate?country=DE",
-        "supported_countries": list(IBAN_FORMATS.keys())
+        "supported_countries": list(COUNTRY_GENERATORS.keys())
     })
 
 @app.route("/generate")
 def generate_iban():
     country = request.args.get("country", "").upper()
 
-    if country not in IBAN_FORMATS:
+    if country not in COUNTRY_GENERATORS:
         return jsonify({
             "error": f"Unsupported country code: {country}",
-            "supported_countries": list(IBAN_FORMATS.keys())
+            "supported_countries": list(COUNTRY_GENERATORS.keys())
         }), 400
 
-    # Generate BBAN according to country's format
-    bban = IBAN_FORMATS[country]["bban"]()
-    
-    # Calculate check digits
+    # Generate BBAN with country-specific structure
+    bban = COUNTRY_GENERATORS[country]["generator"]()
     check_digits = calculate_check_digits(country, bban)
-    
-    # Construct IBAN
     iban = f"{country}{check_digits}{bban}"
 
     # Verify length
-    if len(iban) != IBAN_FORMATS[country]["length"]:
+    if len(iban) != COUNTRY_GENERATORS[country]["length"]:
         return jsonify({
             "error": f"Generated IBAN length mismatch for {country}",
-            "expected_length": IBAN_FORMATS[country]["length"],
+            "expected_length": COUNTRY_GENERATORS[country]["length"],
             "actual_length": len(iban)
         }), 500
 
@@ -139,7 +133,11 @@ def generate_iban():
         "iban": iban,
         "country": country,
         "valid": True,
-        "length": len(iban)
+        "length": len(iban),
+        "details": {
+            "bban": bban,
+            "check_digits": check_digits
+        }
     })
 
 if __name__ == "__main__":
