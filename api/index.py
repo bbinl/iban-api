@@ -3,64 +3,50 @@ import random
 
 app = Flask(__name__)
 
-# Country-specific IBAN structure
+# Real format-based IBAN lengths and structures
 IBAN_FORMATS = {
-    "DE": {"length": 22, "bank_code_len": 8, "account_len": 10},
-    "GB": {"length": 22, "bank_code_len": 10, "account_len": 8},  # Sort + Acc
-    "NL": {"length": 18, "bank_code_len": 4, "account_len": 10},
-    "ES": {"length": 24, "bank_code_len": 8, "account_len": 12},
-    "FR": {"length": 27, "bank_code_len": 10, "account_len": 13},
-    "BD": {"length": 28, "bank_code_len": 4, "account_len": 22}
+    "DE": {"length": 22, "bban": lambda: generate_numeric(18)},  # 8 (bank) + 10 (account)
+    "GB": {"length": 22, "bban": lambda: generate_alpha(4) + generate_numeric(14)},  # bank code + sort + acc
+    "NL": {"length": 18, "bban": lambda: generate_alpha(4) + generate_numeric(10)},
+    "ES": {"length": 24, "bban": lambda: generate_numeric(20)},  # bank + branch + control + acc
+    "FR": {"length": 27, "bban": lambda: generate_numeric(23) + generate_alpha(2)},  # bank + branch + acc + key
+    "BD": {"length": 28, "bban": lambda: "BRAC" + generate_numeric(24)}  # Example fixed bank code
 }
 
-def letter_to_number(char):
-    return str(ord(char.upper()) - 55)
-
-def calculate_check_digits(country_code, bban):
-    rearranged = bban + country_code + "00"
-    numeric_string = ''.join(letter_to_number(c) if c.isalpha() else c for c in rearranged)
-    mod_result = int(numeric_string) % 97
-    check_digits = 98 - mod_result
-    return f"{check_digits:02d}"
-
-def generate_random_numeric(length):
+def generate_numeric(length):
     return ''.join(str(random.randint(0, 9)) for _ in range(length))
 
-def generate_iban(country_code):
-    country_code = country_code.upper()
+def generate_alpha(length):
+    return ''.join(random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ") for _ in range(length))
 
-    if country_code not in IBAN_FORMATS:
-        return None, f"Unsupported or invalid country code '{country_code}'"
+def letter_to_number(c):
+    return str(ord(c.upper()) - 55) if c.isalpha() else c
 
-    fmt = IBAN_FORMATS[country_code]
-    bank_code = generate_random_numeric(fmt["bank_code_len"])
-    account_number = generate_random_numeric(fmt["account_len"])
-    bban = bank_code + account_number
-    check_digits = calculate_check_digits(country_code, bban)
-    iban = f"{country_code}{check_digits}{bban}"
-    
-    # Final check
-    if len(iban) != fmt["length"]:
-        return None, f"Generated IBAN length mismatch for {country_code}"
-
-    return iban, None
+def calculate_check_digits(country, bban):
+    rearranged = bban + country + "00"
+    numeric = ''.join(letter_to_number(c) for c in rearranged)
+    mod = int(numeric) % 97
+    return f"{98 - mod:02d}"
 
 @app.route("/")
 def home():
     return jsonify({
-        "message": "Welcome to the Advanced IBAN Generator API",
+        "message": "Welcome to Fully Valid IBAN Generator API!",
         "usage": "/generate?country=DE"
     })
 
-@app.route("/generate", methods=["GET"])
-def generate():
+@app.route("/generate")
+def generate_iban():
     country = request.args.get("country", "").upper()
 
-    if not country:
-        return jsonify({"error": "Missing required 'country' parameter"}), 400
+    if country not in IBAN_FORMATS:
+        return jsonify({"error": f"Unsupported or invalid country code: {country}"}), 400
 
-    iban, error = generate_iban(country)
-    if error:
-        return jsonify({"error": error}), 400
+    bban = IBAN_FORMATS[country]["bban"]()
+    check_digits = calculate_check_digits(country, bban)
+    iban = f"{country}{check_digits}{bban}"
+
+    if len(iban) != IBAN_FORMATS[country]["length"]:
+        return jsonify({"error": f"IBAN length mismatch for {country}"}), 500
 
     return jsonify({"iban": iban})
