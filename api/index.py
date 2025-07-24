@@ -166,10 +166,7 @@ def generate_iban_for_country(country_code):
             # Special handling for Italian check character
             if country_code == "IT" and len(bban_parts) == 0:
                 # Generate Italian check character (CIN)
-                cin_map = {0:"A", 1:"B", 2:"C", 3:"D", 4:"E", 5:"F", 6:"G", 7:"H", 8:"I", 9:"J"}
-                digit_map = {0:1, 1:0, 2:5, 3:7, 4:9, 5:13, 6:15, 7:17, 8:19, 9:21}
-                
-                # We'll calculate this after generating the rest
+                # This will be calculated after generating other parts
                 placeholder = "X"
                 bban_parts.append(placeholder)
             else:
@@ -182,8 +179,20 @@ def generate_iban_for_country(country_code):
         branch_code = bban_parts[2]  # N05 part
         account_number = bban_parts[3]  # A12 part
         
+        cin_map = {0:"A", 1:"B", 2:"C", 3:"D", 4:"E", 5:"F", 6:"G", 7:"H", 8:"I", 9:"J"}
+        digit_map = {0:1, 1:0, 2:5, 3:7, 4:9, 5:13, 6:15, 7:17, 8:19, 9:21}
+        
+        # Calculate sums for CIN
         even_sum = sum(int(bank_code[i]) + int(branch_code[i]) for i in range(1, 5, 2))
         odd_sum = sum(digit_map[int(bank_code[i])] + digit_map[int(branch_code[i])] for i in range(0, 5, 2))
+        
+        # Add account number digits to sums (adjusted for alphanumeric)
+        for char in account_number:
+            if char.isdigit():
+                odd_sum += digit_map[int(char)]
+            else: # Alphabetic character
+                odd_sum += digit_map[ord(char.upper()) - 55] # A=10, B=11, etc.
+                
         total = (odd_sum + even_sum) % 26
         cin = cin_map[total]
         bban_parts[0] = cin
